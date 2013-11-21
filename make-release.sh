@@ -11,6 +11,12 @@ fi
 if [ -f CHANGELOG ]
 then
     version=`grep -m 1 Version CHANGELOG | sed -e 's/.* //'`
+    
+    if sed -ne 2p CHANGELOG | grep -vq '^20..-..-..$'
+    then
+        echo "expected date in second line of CHANGELOG, can't continue"
+        exit 1
+    fi
 else
     version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
 fi
