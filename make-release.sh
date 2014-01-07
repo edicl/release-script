@@ -23,7 +23,6 @@ then
     exit 1
 fi
 
-current_version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
 default_next_version=`echo $current_version | perl -pe 's/(\d+)$/int($1) + 1/e'`
 
 echo "Version number [$default_next_version]: \c"
