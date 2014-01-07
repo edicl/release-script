@@ -2,30 +2,61 @@
 
 set -e
 
+if [ "`git status -s`" != "" ]
+then
+    echo working directory is dirty
+    git status -s
+    exit 1
+fi
+
+if [ "$EDITOR" = "" ]
+then
+    EDITOR=vi
+fi
+
 program=`basename $PWD`
+current_version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
+
+if [ "$current_version" = "" ]
+then
+    echo could not determine version number 1>&2
+    exit 1
+fi
+
+current_version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
+default_next_version=`echo $current_version | perl -pe 's/(\d+)$/int($1) + 1/e'`
+
+echo "Version number [$default_next_version]: \c"
+read next_version
+if [ "$next_version" = "" ]
+then
+    next_version=$default_next_version
+fi
+
+(
+    echo Version $next_version
+    date +%Y-%m-%d
+    git log --format='%s (%an)' v$current_version.. | cat
+    echo
+    cat CHANGELOG
+) > CHANGELOG.new
+mv CHANGELOG.new CHANGELOG
+
+$EDITOR CHANGELOG
+
+version=$next_version
+
+perl -pi -e "s/$current_version/$version/ if (/:version/)" ${program}.asd
+
 if [ -f .pre-release.sh ]
 then
     sh .pre-release.sh
 fi
 
-if [ -f CHANGELOG ]
-then
-    version=`grep -m 1 Version CHANGELOG | sed -e 's/.* //'`
-    
-    if sed -ne 2p CHANGELOG | grep -vq '^20..-..-..$'
-    then
-        echo "expected date in second line of CHANGELOG, can't continue"
-        exit 1
-    fi
-else
-    version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
-fi
+echo "Press return to release $program v$version: \c"
+read line
 
-if [ "$version" = "" ]
-then
-    echo could not determine version number 1>&2
-    exit 1
-fi
+git commit -am "release $version"
 
 echo "making $program release $version"
 if git tag -l | fgrep -qx v$version
@@ -34,14 +65,6 @@ then
     exit 1
 fi
 
-if [ "`git status -s`" != "" ]
-then
-    echo working directory is dirty
-    git status -s
-    exit 1
-fi
-
-git commit --allow-empty -m "release $version"
 git tag v$version
 git push --tags
 git push --all
