@@ -9,6 +9,13 @@ then
     exit 1
 fi
 
+if [ "$EDICL_GITHUB_TOKEN" = "" ]
+then
+    echo EDICL_GITHUB_TOKEN environment variable not set, cannot continue
+    echo You can generate a token using https://github.com/settings/applications#personal-access-tokens
+    exit 1
+fi
+
 if [ "$EDITOR" = "" ]
 then
     EDITOR=vi
@@ -64,14 +71,18 @@ then
     exit 1
 fi
 
-git tag v$version
-git push --tags
 git push --all
-git archive --format=tar --prefix=${program}-${version}/ v$version | gzip > ${program}-${version}.tar.gz
-scp ${program}-${version}.tar.gz netzhansa.com:/usr/local/www/site/netzhansa.com/
-mv ${program}-${version}.tar.gz ${program}.tar.gz
-scp ${program}.tar.gz netzhansa.com:/usr/local/www/site/netzhansa.com/
-rm ${program}.tar.gz
+
+curl -d @- -H 'Content-Type: application/json' -u $EDICL_GITHUB_TOKEN:x-oauth-basic https://api.github.com/repos/edicl/$program/releases <<EOD
+{
+  "tag_name": "v$version",
+  "target_commitish": "master",
+  "name": "v$version",
+  "body": "Release $version",
+  "draft": false,
+  "prerelease": false
+}
+EOD
 
 if [ -f .post-release.sh ]
 then
