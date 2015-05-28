@@ -12,7 +12,7 @@ fi
 if [ "$EDICL_GITHUB_TOKEN" = "" ]
 then
     echo EDICL_GITHUB_TOKEN environment variable not set, cannot continue
-    echo You can generate a token using https://github.com/settings/applications#personal-access-tokens
+    echo You can generate a token using https://github.com/settings/tokens
     exit 1
 fi
 
