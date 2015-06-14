@@ -23,6 +23,8 @@ fi
 
 program=`basename $PWD`
 current_version=`perl -ne 'print "$1\n" if (/:version\s*"(.*?)"/)' ${program}.asd`
+repo=$(git remote -v | head -1 | sed -e 's/.*:\(.*\) .*/\1/')
+branch=$((git symbolic-ref -q HEAD || git name-rev --name-only --no-undefined --always HEAD) | sed -e 's/.*\///')
 
 if [ "$current_version" = "" ]
 then
@@ -73,10 +75,10 @@ fi
 
 git push --all
 
-curl -d @- -H 'Content-Type: application/json' -u $EDICL_GITHUB_TOKEN:x-oauth-basic https://api.github.com/repos/edicl/$program/releases <<EOD
+curl -d @- -H 'Content-Type: application/json' -u $EDICL_GITHUB_TOKEN:x-oauth-basic https://api.github.com/repos/$repo/releases <<EOD
 {
   "tag_name": "v$version",
-  "target_commitish": "master",
+  "target_commitish": "$branch",
   "name": "v$version",
   "body": "Release $version",
   "draft": false,
